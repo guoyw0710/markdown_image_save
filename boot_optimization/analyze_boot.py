@@ -33,6 +33,7 @@ import shutil
 from datetime import datetime, timedelta
 from subprocess import call, Popen, PIPE
 import analyze_suspend as aslib
+import csv
 
 # ----------------- CLASSES --------------------
 
@@ -49,6 +50,7 @@ class SystemValues(aslib.SystemValues):
 	dmesgfile = ''
 	ftracefile = ''
 	htmlfile = 'bootgraph.html'
+	csvfile = 'bootstatis.csv'
 	outfile = ''
 	testdir = ''
 	testdirprefix = 'boot'
@@ -285,6 +287,9 @@ def parseKernelLog():
 
 	tp = aslib.TestProps()
 	devtemp = dict()
+	csvfile = open(sysvals.csvfile, 'wb')
+	csvwriter = csv.writer(csvfile)
+	csvwriter.writerow(['Func', 'Start(ms)', 'End(ms)', 'Duration(ms)', 'Return'])
 	if(sysvals.dmesgfile):
 		lf = open(sysvals.dmesgfile, 'r')
 	else:
@@ -334,6 +339,7 @@ def parseKernelLog():
 			if(f in devtemp):
 				start, pid = devtemp[f]
 				data.newAction(phase, f, pid, start, ktime, int(r), int(t))
+				csvwriter.writerow([f, start*1000, ktime*1000, float(t)/1000, int(r)])
 				del devtemp[f]
 			continue
 		if(re.match('^Freeing unused kernel memory.*', msg)):
@@ -347,6 +353,7 @@ def parseKernelLog():
 		tp.parseStamp(data, sysvals)
 	data.dmesg['user']['end'] = data.end
 	lf.close()
+	csvfile.close()
 	return data
 
 # Function: parseTraceLog
